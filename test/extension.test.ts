@@ -21,6 +21,7 @@ function harness(options: { base?: string; noBase?: boolean; failReload?: boolea
   const commands = new Map<string, { command: ExtensionCommand; handler: ExtensionCommandHandler }>();
   const events = new Map<ExtensionEventName, ExtensionEventHandler>();
   const reloads: string[] = [];
+  const gitCalls: string[][] = [];
   const notices: string[] = [];
   let status = "";
   let input = options.input ?? null;
@@ -48,6 +49,7 @@ function harness(options: { base?: string; noBase?: boolean; failReload?: boolea
   }
   const run: RunCommand = async (file, args) => {
     if (file === "git") {
+      gitCalls.push(args);
       if (args[0] === "symbolic-ref") {
         if (options.noBase) throw new Error("No default");
         return "refs/remotes/origin/main\n";
@@ -76,7 +78,7 @@ function harness(options: { base?: string; noBase?: boolean; failReload?: boolea
   branchToggle(api, run, 12);
   void emit("changeset_loaded", { changeset: { id: "diff", title: "diff", sourceLabel: "/repo", files: [] } });
   return {
-    commands, reloads, notices, emit,
+    commands, reloads, gitCalls, notices, emit,
     get status() { return status; },
     async invoke(id: string) {
       assert.equal(retired, false);
@@ -108,6 +110,7 @@ test("provides a direct all-uncommitted action", async () => {
   const h = harness();
   await h.invoke("uncommitted");
   assert.deepEqual(h.reloads, ["HEAD"]);
+  assert.deepEqual(h.gitCalls, []);
   assert.equal(h.status, "Uncommitted");
 });
 
@@ -117,6 +120,7 @@ test("selecting a new base in branch mode reloads without losing the mode", asyn
   await h.invoke("base");
   assert.equal(h.status, "Branch vs develop");
   assert.equal(h.reloads.length, 2);
+  assert.equal(h.gitCalls.filter((args) => args[0] === "merge-base").length, 2);
 });
 
 test("base selection outside branch mode does not change the comparison", async () => {

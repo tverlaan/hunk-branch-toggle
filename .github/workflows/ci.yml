@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['22.18.0', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --ignore-scripts --omit=optional
+      - run: npm run typecheck
+      - run: npm test
+      - name: Install Hunk for PTY tests
+        if: matrix.node == '24'
+        run: npm install --global hunkdiff@0.24.1 --ignore-scripts
+      - name: PTY smoke tests
+        if: matrix.node == '24'
+        run: |
+          npm run test:pty
+          python3 test/pty-smoke.py --without-hunk-on-path
+      - name: Managed-install smoke test
+        if: matrix.node == '24'
+        env:
+          XDG_CONFIG_HOME: ${{ runner.temp }}/hunk-config
+          XDG_STATE_HOME: ${{ runner.temp }}/hunk-state
+        run: |
+          hunk extension install "$GITHUB_WORKSPACE" --yes
+          python3 test/pty-smoke.py --global-install
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches package version
+        run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./package.json').version")"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --generate-notes

@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "description": "Toggle Hunk between all uncommitted changes and the full branch diff.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tverlaan/hunk-branch-toggle.git"
+  },
+  "homepage": "https://github.com/tverlaan/hunk-branch-toggle#readme",
+  "bugs": "https://github.com/tverlaan/hunk-branch-toggle/issues",
+  "keywords": ["hunk", "hunk-extension", "git", "diff"],
   "type": "module",
   "hunk": {
     "apiVersion": 26,

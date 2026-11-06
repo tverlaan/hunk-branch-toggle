@@ -7,20 +7,23 @@ A dependency-free extension for Hunk 0.24.1. Press **Shift+B** to switch the cur
 
 Hunk also displays untracked files in these working-tree comparisons by default.
 
-## Use
+## Install
+
+Install with Hunk's extension manager:
 
 ```sh
-hunk diff HEAD --extension /Users/timmo/Code/hunk-branch-toggle
+hunk extension install tverlaan/hunk-branch-toggle
 ```
 
-For every new Hunk window, add this path to your user config (`~/.config/hunk/config.toml`):
+Hunk loads it for every new review. Restart an already-running Hunk window to load the extension. No runtime npm installation or build is needed.
 
-```toml
-[extensions]
-paths = ["/Users/timmo/Code/hunk-branch-toggle"]
+For a one-off local test:
+
+```sh
+hunk diff HEAD --extension /path/to/hunk-branch-toggle
 ```
 
-Restart an already-running Hunk window to load the extension. No runtime npm installation or build is needed.
+## Use
 
 The **Extensions** menu provides the toggle, direct commands for either mode, and **Choose base branch…**. A status-row label shows the active mode.
 
@@ -52,6 +55,8 @@ The default uppercase `B` is unused by Hunk's built-in commands. Remap it in you
 
 ## Development
 
+The unit tests use Node's native TypeScript stripping: use Node 22.18+ on the 22.x line, or Node 23.6+ (Node 24 LTS recommended). The PTY smoke test is POSIX-only (macOS/Linux); it does not run on Windows.
+
 ```sh
 npm ci --ignore-scripts --omit=optional
 npm run typecheck
@@ -59,6 +64,14 @@ npm test
 npm run test:pty
 ```
 
-`hunkdiff` is a pinned development dependency for the public API types, not a runtime dependency. The extension uses asynchronous, argument-array subprocess calls and reuses the running Hunk executable, so `hunk` does not need to be on the application's PATH. It identifies its own live session by process ID and fails closed if that identity is ambiguous; it never selects another window by repository path.
+The manifest requires extension API 26 because that version introduced `ctx.statusLine`.
+
+`hunkdiff` is a pinned development dependency for the public API types, not a runtime dependency. Mode switching uses the packaged Hunk executable; launching Hunk from source through `bun` or `node` is not supported.
+
+CI runs typechecking and unit tests on Node 22 and 24, plus both PTY smoke tests on Linux. To publish a GitHub release, update `package.json` and the lockfile, then push a matching `v` tag (for example, `v0.1.0`). The release is created only after CI passes.
 
 The PTY smoke test needs Python 3 and `hunk` on the test runner's PATH. Add `--without-hunk-on-path` when running `python3 test/pty-smoke.py` to test Hunk with a restricted launch environment. It creates a temporary Git repository and private terminal, tests both modes against the installed Hunk binary, checks staged/unstaged/untracked coverage, and verifies that Git state and neighboring Hunk windows remain unchanged.
+
+## License
+
+[MIT](LICENSE)

@@ -4,7 +4,7 @@ import type {
   ExtensionStatusLineControls,
   HunkExtensionAPI,
 } from "hunkdiff/extension";
-import { branchBaseline, detectBase, reloadReview, resolveCommit, runCommand, type RunCommand } from "./review.ts";
+import { branchBaseline, detectBase, reloadReview, runCommand, type RunCommand } from "./review.ts";
 
 type Mode = "original" | "uncommitted" | "branch";
 
@@ -46,8 +46,6 @@ export default function branchToggle(hunk: HunkExtensionAPI, run: RunCommand = r
       }
       nextBase = nextBase.trim();
       baseline = await branchBaseline(ctx.cwd, nextBase, run);
-    } else {
-      await resolveCommit(ctx.cwd, "HEAD", run);
     }
     await reloadReview(ctx.cwd, baseline, run, pid);
     mode = next;
@@ -87,10 +85,10 @@ export default function branchToggle(hunk: HunkExtensionAPI, run: RunCommand = r
     });
     if (value === null) return;
     const candidate = value.trim();
-    await branchBaseline(ctx.cwd, candidate, run);
     if (mode === "branch") {
       await changeMode(ctx, "branch", candidate);
     } else {
+      await branchBaseline(ctx.cwd, candidate, run);
       base = candidate;
       ctx.notify(`Branch diff base: ${base}`);
     }
